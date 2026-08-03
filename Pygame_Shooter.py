@@ -138,10 +138,10 @@ while playing:
     screen.fill(bg_color)
     clock.tick(fps)
 
-    e_spawn_ps = 3 + total_money / 200
+    e_spawn_ps = 3 + total_money / 400
     if e_spawn_ps > 75:
         e_spawn_ps = 75
-    espeed= 1 + total_money / 350
+    espeed= 1 + total_money / 500
     if espeed > 2.5:
         espeed = 4
 
