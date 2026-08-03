@@ -203,7 +203,6 @@ while playing:
                 move_left = True
             elif event.key in (pygame.K_d, pygame.K_RIGHT):
                 move_right = True
-
         if event.type == pygame.KEYUP:
             if event.key in (pygame.K_w, pygame.K_UP):
                 move_up = False
@@ -235,22 +234,30 @@ while playing:
                 if scene == "game":
                     for a in range(pierce):
                         for i in range(multi_bullet):
-                            offset = (i - multi_bullet // 2) * spread  #####  I think sin and cos translates angle and spd to lik movement(dx,dy) or smth
-                            spread = random.uniform(-0.08, 0.08)
-                            shot_angle = angle + offset
-                            bullets.append({"x": turrent_center_x, "y": turrent_center_y,
-                                            "dx": math.cos(shot_angle) * bullet_speed,
-                                            "dy": -math.sin(shot_angle) * bullet_speed})
+                            # Calculate offset without overwriting the 'spread' variable
+                            random_inaccuracy = random.uniform(-0.08, 0.08)
+                            offset = (i - (multi_bullet - 1) / 2) * spread
+                            shot_angle = angle + offset + random_inaccuracy
+
+                            bullets.append({
+                                "x": turrent_center_x,
+                                "y": turrent_center_y,
+                                "dx": math.cos(shot_angle) * bullet_speed,
+                                "dy": -math.sin(shot_angle) * bullet_speed
+                            })
+
                             if flank:
                                 fspread = spread / 2
                                 flankspread += 1
                                 if flankspread >= 2:
                                     flankspread = 0
-                                    offset = (
-                                                         i - multi_bullet // 2.5) * fspread  #####  I think sin and cos translates angle and spd to lik movement(dx,dy) or smth
-                                    bullets.append({"x": turrent_center_x, "y": turrent_center_y,
-                                                    "dx": -math.cos(angle + offset) * bullet_speed,
-                                                    "dy": math.sin(angle + offset) * bullet_speed})
+                                    foffset = (i - (multi_bullet - 1) / 2) * fspread
+                                    bullets.append({
+                                        "x": turrent_center_x,
+                                        "y": turrent_center_y,
+                                        "dx": -math.cos(angle + foffset) * bullet_speed,
+                                        "dy": math.sin(angle + foffset) * bullet_speed
+                                    })
                 else:
                     offset = (1 - multi_bullet // 2) * spread
                     bullets.append({"x": turrent_center_x, "y": turrent_center_y, "dx": math.cos(angle) * bullet_speed,
