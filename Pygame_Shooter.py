@@ -14,15 +14,17 @@ screenwidth = 800
 screenheight = 600
 screen = pygame.display.set_mode((screenwidth, screenheight))
 
-
+pygame.display.set_caption("Shooter Game")
+icon = pygame.image.load("icon.png")
+pygame.display.set_icon(icon)
 
 
 t_rad = 25
 width = t_rad
 height = t_rad * 3
-turrent_image = pygame.image.load("turrent.png").convert_alpha()
-turrent_image = pygame.transform.scale(turrent_image, (width, height))
-rotated_turrent = turrent_image
+turret_image = pygame.image.load("Turret.png").convert_alpha()
+turret_image = pygame.transform.scale(turret_image, (width, height))
+rotated_turret = turret_image
 
 arrow_image = pygame.image.load("Arrow.png").convert_alpha()
 arrow_image = pygame.transform.scale(arrow_image, (90, 77))
@@ -42,7 +44,7 @@ move_up = move_down = move_left = move_right = False
 
 # Bullets
 bullets = []  # {"x","y","dx","dy"}
-enemys = []
+enemies = []
 
 
 max_ammo = 10
@@ -50,17 +52,17 @@ ammo = max_ammo
 reload_timer = 0
 ammo_rad = 5
 bullet_speed = 8
-mspread = 0.15
+m_spread = 0.15
 mgun = False
 mgun_r = 0
 mgun_r_time = fps / 15
 
 flank = False
-flankspread = 0
+flank_spread = 0
 
 espeed = 1  # how fast enemy moves
 e_spawn = 0
-e_spawn_ps = 3 # how many spawn per second
+e_spawn_ps = 3 # how much spawn per second
 e_rad = 20
 distance = 0
 
@@ -71,7 +73,7 @@ scene = "main"
 
 
 #shop
-money = 0    ############################
+money = 100000000000000000000000   ############################
 total_money = money
 multi_cost = 100
 multi_bullet = 1
@@ -99,15 +101,30 @@ rect_back = pygame.Rect(screenwidth/2 - 50, 500, 100, 50)
 
 #settings color control
 player_color = [255, 255, 255]
-player_outline = False
-player_outline_color = (0, 255, 255)
-bg_color = (0, 0, 0)
-bullet_color = (255, 255, 0)
+player_outline_width = 0
+player_outline_color = [0, 255, 255]
+bg_color = [0, 0, 0]
+bullet_color = [255, 255, 0]
 bullet_outline = False
-bullet_outline_color = (0, 0, 0)
-enemy_color = (255, 0, 0)
+bullet_outline_color = [0, 0, 0]
+enemy_color = [255, 0, 0]
 enemy_outline = False
-enemy_outline_color = (255, 50, 50)
+enemy_outline_color = [255, 50, 50]
+
+prev_player_color = [255, 255, 255]
+prev_player_outline_width = 0
+prev_player_outline_color = [0, 255, 255]
+prev_bg_color = [0, 0, 0]
+prev_bullet_color = [255, 255, 0]
+prev_bullet_outline = False
+prev_bullet_outline_color = [0, 0, 0]
+prev_enemy_color = [255, 0, 0]
+prev_enemy_outline = False
+prev_enemy_outline_color = [255, 50, 50]
+
+main_color_rect = [250, 350, 100, 100]
+secondary_color_rect = [450, 350, 100, 100]
+
 
 player_color_rect = pygame.Rect(200, 150, 100, 50)
 
@@ -115,8 +132,11 @@ settings_box_draw = False
 settings_box = pygame.Rect(screenwidth/2 - 275, screenheight/2 - 200, 550, 390)
 settings_box_exit = pygame.Rect(screenwidth/2 + 250, screenheight/2 -225, 50, 50)
 settings_box_draw_task = None
+settings_box_select_main = True
 save_main = pygame.Rect(585, 250, 40, 40)
 undo_main = pygame.Rect(525, 250, 40, 40)
+turret_elevation_rect = [600, 400, 40, 40]
+turret_elevation = 1
 
 color_slider_r = screen,(255, 0, 0),[(170, 150), (425, 130), (425, 170)]
 color_slider_g = screen,(0, 255, 0),[(170, 200), (425, 180), (425, 220)]
@@ -125,16 +145,19 @@ color_slider_b = screen,(0, 0, 255),[(170, 250), (425, 230), (425, 270)]
 color_line_r_pos = 255
 color_line_g_pos = 255
 color_line_b_pos = 255
+color_line_outline_pos = 0
 
 drag_r = False
 drag_g = False
 drag_b = False
+drag_outline = False
 
-prev_player_color = [255, 255, 255]
+click = False
 while playing:
     color_line_r = screen, (0, 0, 0), (170 + color_line_r_pos, 150 - color_line_r_pos / 255 * 20), (170 + color_line_r_pos, 150 + color_line_r_pos / 255 * 20), 5
     color_line_g = screen, (0, 0, 0), (170 + color_line_g_pos, 200 - color_line_g_pos / 255 * 20 ), (170 + color_line_g_pos, 200 + color_line_g_pos / 255 * 20), 5
     color_line_b = screen, (0, 0, 0), (170 + color_line_b_pos, 250 - color_line_b_pos / 255 * 20 ), (170 + color_line_b_pos, 250 + color_line_b_pos / 255 * 20), 5
+
     screen.fill(bg_color)
     clock.tick(fps)
 
@@ -155,9 +178,9 @@ while playing:
     x = max(0 + 10, min(x, screenwidth - width - 10))
     y = max(0 + 10, min(y, screenheight - height - 10))
 
-    turrent_center_x = x + width // 2
-    turrent_center_y = y + height // 2
-    turrent_center = (turrent_center_x, turrent_center_y)
+    turret_center_x = x + width // 2
+    turret_center_y = y + height // 2
+    turret_center = (turret_center_x, turret_center_y)
 
     def make_enemy(n):
         if n:
@@ -181,9 +204,9 @@ while playing:
 
             edx = (diff_x / distance) * espeed
             edy = (diff_y / distance) * espeed
-            enemys.append({"x": ex, "y": ey,"edx": edx, "edy": edy ,"t":0 })
+            enemies.append({"x": ex, "y": ey, "edx": edx, "edy": edy , "t":0})
         else:
-            enemys.append({"x": 600, "y": screenheight/2, "edx": 0, "edy": 0, "t": 0})
+            enemies.append({"x": 600, "y": screenheight / 2, "edx": 0, "edy": 0, "t": 0})
     def make_text(tx,ty,color,yap,size):
         font = pygame.font.SysFont("Comic Sans MS", size)
         text_surface = font.render(str(yap), True, color)
@@ -193,7 +216,6 @@ while playing:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
-
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_w, pygame.K_UP):
                 move_up = True
@@ -216,21 +238,19 @@ while playing:
             elif event.key in (pygame.K_d, pygame.K_RIGHT):
                 move_right = False
                 d = 1
-
         if event.type == pygame.MOUSEBUTTONDOWN:
-
             if ammo > 0 and mgun == False and scene != "settings":
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                turrent_center_x = x + width // 2
-                turrent_center_y = y + height // 2
+                turret_center_x = x + width // 2
+                turret_center_y = y + height // 2
 
-                dx = mouse_x - turrent_center_x
-                dy = mouse_y - turrent_center_y
+                dx = mouse_x - turret_center_x
+                dy = mouse_y - turret_center_y
                 angle = math.atan2(-dy, dx)
                 ammo -= 1
                 reload_timer = 0
-                spread = mspread
+                spread = m_spread
                 if scene == "game":
                     for a in range(pierce):
                         for i in range(multi_bullet):
@@ -240,73 +260,115 @@ while playing:
                             shot_angle = angle + offset + random_inaccuracy
 
                             bullets.append({
-                                "x": turrent_center_x,
-                                "y": turrent_center_y,
+                                "x": turret_center_x,
+                                "y": turret_center_y,
                                 "dx": math.cos(shot_angle) * bullet_speed,
                                 "dy": -math.sin(shot_angle) * bullet_speed
                             })
 
                             if flank:
-                                fspread = spread / 2
-                                flankspread += 1
-                                if flankspread >= 2:
-                                    flankspread = 0
-                                    foffset = (i - (multi_bullet - 1) / 2) * fspread
+                                f_spread = spread / 2
+                                flank_spread += 1
+                                if flank_spread >= 2:
+                                    flank_spread = 0
+                                    f_offset = (i - (multi_bullet - 1) / 2) * f_spread
                                     bullets.append({
-                                        "x": turrent_center_x,
-                                        "y": turrent_center_y,
-                                        "dx": -math.cos(angle + foffset) * bullet_speed,
-                                        "dy": math.sin(angle + foffset) * bullet_speed
+                                        "x": turret_center_x,
+                                        "y": turret_center_y,
+                                        "dx": -math.cos(angle + f_offset) * bullet_speed,
+                                        "dy": math.sin(angle + f_offset) * bullet_speed
                                     })
                 else:
                     offset = (1 - multi_bullet // 2) * spread
-                    bullets.append({"x": turrent_center_x, "y": turrent_center_y, "dx": math.cos(angle) * bullet_speed,
+                    bullets.append({"x": turret_center_x, "y": turret_center_y, "dx": math.cos(angle) * bullet_speed,
                                     "dy": -math.sin(angle) * bullet_speed})
                 shoot = 1
             if scene == "settings":
                 if rect_back.collidepoint(event.pos):
                     scene = "main"
                     settings_box_draw = False
-                    turrent_center = (screenwidth/2, screenheight/2)
+                    turret_center = (screenwidth/2, screenheight/2)
+                    bullets.clear()
                 elif settings_box_exit.collidepoint(event.pos) and settings_box_draw:
                     settings_box_draw = False
                 elif player_color_rect.collidepoint(event.pos) and not settings_box_draw:
                     settings_box_draw = True
                     settings_box_draw_task = "p_color"
+                    settings_box_select_main = True
                 elif save_main.collidepoint(event.pos):
                     if settings_box_draw_task == "p_color":
-                        player_color = prev_player_color.copy()
+                        if settings_box_select_main:
+                            player_color = prev_player_color.copy()
+                        else:
+                            player_outline_color = prev_player_outline_color.copy()
                 elif undo_main.collidepoint(event.pos):
                     if settings_box_draw_task == "p_color":
-                        prev_player_color = player_color.copy()
-                        color_line_r_pos = player_color[0]
-                        color_line_g_pos = player_color[1]
-                        color_line_b_pos = player_color[2]
+                        if settings_box_select_main:
+                            prev_player_color = player_color.copy()
+                            color_line_r_pos = player_color[0]
+                            color_line_g_pos = player_color[1]
+                            color_line_b_pos = player_color[2]
+                        else:
+                            prev_player_outline_color = player_outline_color.copy()
+                            color_line_r_pos = player_color[0]
+                            color_line_g_pos = player_color[1]
+                            color_line_b_pos = player_color[2]
                 elif pygame.Rect(170, 130, 255, 40).collidepoint(event.pos) and settings_box_draw:
                     drag_r = True
                 elif pygame.Rect(170, 180, 255, 40).collidepoint(event.pos) and settings_box_draw:
                     drag_g = True
                 elif pygame.Rect(170, 230, 255, 40).collidepoint(event.pos) and settings_box_draw:
                     drag_b = True
-
+                elif pygame.Rect(main_color_rect[0],main_color_rect[1],main_color_rect[2],main_color_rect[3]).collidepoint(event.pos):
+                    settings_box_select_main = True
+                    color_line_r_pos = prev_player_color[0]
+                    color_line_g_pos = prev_player_color[1]
+                    color_line_b_pos = prev_player_color[2]
+                elif pygame.Rect(secondary_color_rect[0],secondary_color_rect[1],secondary_color_rect[2],secondary_color_rect[3]).collidepoint(event.pos):
+                    settings_box_select_main = False
+                    color_line_r_pos = prev_player_outline_color[0]
+                    color_line_g_pos = prev_player_outline_color[1]
+                    color_line_b_pos = prev_player_outline_color[2]
+                elif pygame.Rect(secondary_color_rect[0], secondary_color_rect[1] + secondary_color_rect[3] , 100, 20).collidepoint(event.pos) and settings_box_draw:
+                    drag_outline = True
+                    settings_box_select_main = False
+                elif pygame.Rect(turret_elevation_rect[0],turret_elevation_rect[1],turret_elevation_rect[2],turret_elevation_rect[3]).collidepoint(event.pos) and click == False:
+                    turret_elevation +=1
+                    if turret_elevation > 3:
+                        turret_elevation = 1
+            click = True
         if event.type == pygame.MOUSEBUTTONUP:
             drag_r = False
             drag_g = False
             drag_b = False
-
+            drag_outline = False
+            click = False
+    mouse_x, mouse_y = pygame.mouse.get_pos()
     if drag_r:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
         color_line_r_pos = mouse_x - 170
         color_line_r_pos = max(0, min(255, color_line_r_pos))
-        prev_player_color[0] = int(color_line_r_pos)
+        if settings_box_draw_task == "p_color":
+            if settings_box_select_main:
+                prev_player_color[0] = int(color_line_r_pos)
+            else:
+                prev_player_outline_color[0] = int(color_line_r_pos)
     if drag_g:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
         color_line_g_pos = max(0, min(255, mouse_x - 170))
-        prev_player_color[1] = int(color_line_g_pos)
+        if settings_box_draw_task == "p_color":
+            if settings_box_select_main:
+                prev_player_color[1] = int(color_line_g_pos)
+            else:
+                prev_player_outline_color[1] = int(color_line_g_pos)
     if drag_b:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
         color_line_b_pos = max(0, min(255, mouse_x - 170))
-        prev_player_color[2] = int(color_line_b_pos)
+        if settings_box_draw_task == "p_color":
+            if settings_box_select_main:
+                prev_player_color[2] = int(color_line_b_pos)
+            else:
+                prev_player_outline_color[2] = int(color_line_b_pos)
+    if drag_outline:
+        color_line_outline_pos = max(0, min(100, mouse_x - secondary_color_rect[0]))
+        prev_player_outline_width = color_line_outline_pos/10
     if settings_box_draw:
         pygame.draw.rect(screen, white, settings_box)
         pygame.draw.rect(screen, (255, 0, 0), settings_box_exit)
@@ -320,17 +382,39 @@ while playing:
         pygame.draw.rect(screen, black, pygame.Rect(525, 150, 100, 100))
 
         make_text(color_slider_r[2][0][0] + 265, color_slider_r[2][0][1] - 15, (0, 0, 0), color_line_r_pos, 20)
+        make_text(color_slider_b[2][0][0] + 265, color_slider_b[2][0][1] - 15, (0, 0, 0), color_line_b_pos, 20)
+        make_text(color_slider_g[2][0][0] + 265, color_slider_g[2][0][1] - 15, (0, 0, 0), color_line_g_pos, 20)
 
         pygame.draw.line(color_line_r[0], color_line_r[1], color_line_r[2], color_line_r[3], color_line_r[4])
         pygame.draw.line(color_line_g[0], color_line_g[1], color_line_g[2], color_line_g[3], color_line_g[4])
         pygame.draw.line(color_line_b[0], color_line_b[1], color_line_b[2], color_line_b[3], color_line_b[4])
 
         if settings_box_draw_task == "p_color":
+            pygame.draw.rect(screen, prev_player_color, pygame.Rect(main_color_rect[0],main_color_rect[1],main_color_rect[2],main_color_rect[3]))
+            pygame.draw.rect(screen, black, pygame.Rect(main_color_rect[0],main_color_rect[1],main_color_rect[2],main_color_rect[3]), 5)
+
+            pygame.draw.rect(screen, black, pygame.Rect(turret_elevation_rect[0],turret_elevation_rect[1],turret_elevation_rect[2],turret_elevation_rect[3]))
+            make_text((turret_elevation_rect[0]+turret_elevation_rect[2]/2-5),turret_elevation_rect[1]+turret_elevation_rect[3]/2-18,white,turret_elevation, 30)
+
+            pygame.draw.rect(screen, prev_player_outline_color, pygame.Rect(secondary_color_rect[0],secondary_color_rect[1],secondary_color_rect[2],secondary_color_rect[3]))
+            pygame.draw.rect(screen, black, pygame.Rect(secondary_color_rect[0],secondary_color_rect[1],secondary_color_rect[2],secondary_color_rect[3]), 5)
+            pygame.draw.line(screen,black,(secondary_color_rect[0], secondary_color_rect[1] + secondary_color_rect[3] + 10),(secondary_color_rect[0] + secondary_color_rect[2],secondary_color_rect[1] + secondary_color_rect[3] + 10), 5)
+            pygame.draw.circle(screen, prev_player_outline_color,(secondary_color_rect[0]+color_line_outline_pos , secondary_color_rect[1] + secondary_color_rect[3] + 10) ,10)
             preview_pos = (575, 200)
             make_text(150, 100, (0, 0, 0), "Player Color", 20)
-            turrent_rect = rotated_turrent.get_rect(center=preview_pos)
-            screen.blit(rotated_turrent, turrent_rect.topleft)
-            pygame.draw.circle(screen, prev_player_color, preview_pos, t_rad)
+            turret_rect = rotated_turret.get_rect(center=preview_pos)
+            if turret_elevation == 3:
+                pygame.draw.circle(screen, prev_player_outline_color, preview_pos, t_rad + prev_player_outline_width)
+                pygame.draw.circle(screen, prev_player_color, preview_pos, t_rad)
+                screen.blit(rotated_turret, turret_rect.topleft)
+            if turret_elevation == 2:
+                pygame.draw.circle(screen, prev_player_outline_color, preview_pos, t_rad + prev_player_outline_width)
+                screen.blit(rotated_turret, turret_rect.topleft)
+                pygame.draw.circle(screen, prev_player_color, preview_pos, t_rad)
+            if turret_elevation == 1:
+                screen.blit(rotated_turret, turret_rect.topleft)
+                pygame.draw.circle(screen, prev_player_outline_color, preview_pos, t_rad + prev_player_outline_width)
+                pygame.draw.circle(screen, prev_player_color, preview_pos, t_rad)
 
     # game logic
     mgun_r += 1
@@ -338,37 +422,37 @@ while playing:
         mgun_r = 0
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        turrent_center_x = x + width // 2
-        turrent_center_y = y + height // 2
+        turret_center_x = x + width // 2
+        turret_center_y = y + height // 2
 
-        dx = mouse_x - turrent_center_x
-        dy = mouse_y - turrent_center_y
+        dx = mouse_x - turret_center_x
+        dy = mouse_y - turret_center_y
         angle = math.atan2(-dy, dx)
         ammo -= 1
         reload_timer = 0
-        spread = mspread
+        spread = m_spread
         if scene == "game":
             for a in range(pierce):
                 for i in range(multi_bullet):
                     offset = (
-                                         i - multi_bullet // 2) * spread  #####  I think sin and cos translates angle and spd to lik movement(dx,dy) or smth
+                                     i - multi_bullet // 2) * spread  #####  I think sin and cos translates angle and spd to lik movement(dx,dy) or smth
                     shot_angle = angle + offset + random.uniform(-0.08, 0.08)
                     bullets.append(
-                        {"x": turrent_center_x, "y": turrent_center_y, "dx": math.cos(shot_angle) * bullet_speed,
+                        {"x": turret_center_x, "y": turret_center_y, "dx": math.cos(shot_angle) * bullet_speed,
                          "dy": -math.sin(shot_angle) * bullet_speed})
                     if flank:
-                        fspread = spread / 2
-                        flankspread += 1
-                        if flankspread >= 2:
-                            flankspread = 0
-                            offset = (i - multi_bullet // 2) * fspread
-                            bullets.append({"x": turrent_center_x, "y": turrent_center_y,
+                        f_spread = spread / 2
+                        flank_spread += 1
+                        if flank_spread >= 2:
+                            flank_spread = 0
+                            offset = (i - multi_bullet // 2) * f_spread
+                            bullets.append({"x": turret_center_x, "y": turret_center_y,
                                             "dx": -math.cos(angle + offset) * bullet_speed,
                                             "dy": math.sin(angle + offset) * bullet_speed})
         else:
 
             offset = (1 - multi_bullet // 2) * spread
-            bullets.append({"x": turrent_center_x, "y": turrent_center_y, "dx": math.cos(angle) * bullet_speed,
+            bullets.append({"x": turret_center_x, "y": turret_center_y, "dx": math.cos(angle) * bullet_speed,
                             "dy": -math.sin(angle) * bullet_speed})
         shoot = 1
     # enemy spawn
@@ -377,7 +461,6 @@ while playing:
         if e_spawn >= fps / e_spawn_ps:
             make_enemy(True)
             e_spawn = 0
-
     if lives <= 0:
         for bullet in bullets[:]:
             bullets.remove(bullet)
@@ -389,12 +472,11 @@ while playing:
     if reload_timer > time_to_reload * fps and ammo < max_ammo:
         ammo += 1
         reload_timer = 0
-
     if settings_box_draw or scene != "settings":
         if settings_box_draw:
             preview_pos = [575, 200]
-            turrent_center_x = turrent_center[0]
-            turrent_center_y = turrent_center[1]
+            turret_center_x = turret_center[0]
+            turret_center_y = turret_center[1]
             # I got this online      the angle thing
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -402,20 +484,19 @@ while playing:
             dy = mouse_y - preview_pos[1]
             angle = math.degrees(math.atan2(-dy, dx))  #########dis too
 
-            rotated_turrent = pygame.transform.rotate(turrent_image, angle - 90)
-            turrent_cir = pygame.draw.circle(screen, white, turrent_center, t_rad)
+            rotated_turret = pygame.transform.rotate(turret_image, angle - 90)
         else:
-            turrent_center_x = turrent_center[0]
-            turrent_center_y = turrent_center[1]
+            turret_center_x = turret_center[0]
+            turret_center_y = turret_center[1]
             # I got this online      the angle thing
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
-            dx = mouse_x - turrent_center_x
-            dy = mouse_y - turrent_center_y
+            dx = mouse_x - turret_center_x
+            dy = mouse_y - turret_center_y
             angle = math.degrees(math.atan2(-dy, dx))  #########dis too
 
-            rotated_turrent = pygame.transform.rotate(turrent_image, angle - 90)
-            turrent_cir = pygame.draw.circle(screen, white, turrent_center, t_rad)
+            rotated_turret = pygame.transform.rotate(turret_image, angle - 90)
+            turret_cir = pygame.draw.circle(screen, white, turret_center, t_rad)
     if not_enough > 0:
         make_text(200, 50, white, "Not Enough Money!", 50)
         not_enough -= 1
@@ -436,8 +517,8 @@ while playing:
         make_text(510, 205, black, "How 2?", 25)
         make_text(215, 200, black, "Shop", 30)
         make_text(600, 500, black, "Settings", 20)
-        for enemy in enemys[:]:
-            enemys.remove(enemy)
+        for enemy in enemies[:]:
+            enemies.remove(enemy)
     if scene == "shop":
         # multi shot
         rect_upg_multi_s = pygame.Rect(200, 150, 100, 50)
@@ -498,7 +579,7 @@ while playing:
         pygame.draw.rect(screen, white, rect_back)
         make_text(screenwidth / 2 - 50, 500, black, "Back", 30)
     if scene == "game":
-        turrent_center = (x + width // 2, y + height // 2)
+        turret_center = (x + width // 2, y + height // 2)
         make_text(50, 50, white, lives, 30)
         make_text(x, y, black, ammo, 20)
     if scene == "how":
@@ -544,7 +625,7 @@ while playing:
             make_text(205, 150, black, "Player", 20)
             make_text(205, 175, black, "Color", 20)
 
-    for enemy in enemys[:]:
+    for enemy in enemies[:]:
         enemy["x"] += enemy["edx"]
         enemy["y"] += enemy["edy"]
         enemy["t"] += 1
@@ -553,19 +634,19 @@ while playing:
             # off-screen cleanup
             if (enemy["x"] < 0 or enemy["x"] > screenwidth or
                     enemy["y"] < 0 or enemy["y"] > screenheight):
-                enemys.remove(enemy)
+                enemies.remove(enemy)
                 continue
 
             # draw enemy
         pygame.draw.circle(screen, enemy_color, (int(enemy["x"]), int(enemy["y"])), e_rad)
 
         # player collision
-        dx = enemy["x"] - turrent_center_x
-        dy = enemy["y"] - turrent_center_y
+        dx = enemy["x"] - turret_center_x
+        dy = enemy["y"] - turret_center_y
         distance = (dx ** 2 + dy ** 2) ** 0.5
 
         if distance <= e_rad + t_rad:
-            enemys.remove(enemy)
+            enemies.remove(enemy)
             lives -= 1
             enemy_h = 2
     for bullet in bullets[:]:
@@ -636,7 +717,7 @@ while playing:
 
                         elif floor(time_to_reload * 100) / 100 == 0.2:
                             mgun = True
-                            mspread = 0.1
+                            m_spread = 0.1
                             money -= spd_cost
                             time_to_reload = 0.01
 
@@ -681,14 +762,14 @@ while playing:
                     not_enough = 0
                     continue
             if scene == "game" or scene == "how":
-                for enemy in enemys[:]:
+                for enemy in enemies[:]:
                     dx = bullet["x"] - enemy["x"]
                     dy = bullet["y"] - enemy["y"]
                     distance = (dx ** 2 + dy ** 2) ** 0.5
 
                     if distance <= ammo_rad + e_rad:
                         bullets.remove(bullet)
-                        enemys.remove(enemy)
+                        enemies.remove(enemy)
                         money += round(1 + total_money / 500, 0)
                         total_money += round(1 + total_money / 500, 0)
                         enemy_h = 2
@@ -708,9 +789,21 @@ while playing:
             bullets.clear()
 
     if scene != "settings":
-        turrent_rect = rotated_turrent.get_rect(center=turrent_center)
-        screen.blit(rotated_turrent, turrent_rect.topleft)
-        pygame.draw.circle(screen, (player_color[0], player_color[1], player_color[2]), turrent_center, t_rad)
+        turret_rect = rotated_turret.get_rect(center=turret_center)
+        if turret_elevation == 3:
+            pygame.draw.circle(screen, (player_outline_color[0], player_outline_color[1], player_outline_color[2]),turret_center, t_rad + player_outline_width)
+            pygame.draw.circle(screen, (player_color[0],player_color[1],player_color[2]), turret_center, t_rad + player_outline_width)
+            screen.blit(rotated_turret, turret_rect.topleft)
+        elif turret_elevation == 2:
+            pygame.draw.circle(screen, (player_outline_color[0], player_outline_color[1], player_outline_color[2]),turret_center, t_rad + player_outline_width)
+            screen.blit(rotated_turret, turret_rect.topleft)
+            pygame.draw.circle(screen, (player_color[0],player_color[1],player_color[2]), turret_center, t_rad + player_outline_width)
+
+        elif turret_elevation == 1:
+            screen.blit(rotated_turret, turret_rect.topleft)
+            pygame.draw.circle(screen, (player_outline_color[0], player_outline_color[1], player_outline_color[2]),turret_center, t_rad + player_outline_width)
+            pygame.draw.circle(screen, (player_color[0],player_color[1],player_color[2]), turret_center, t_rad + player_outline_width)
+
         make_text(x + t_rad / 12.5 - 2.5, y + t_rad / 3, black, ammo, 30)
 
     pygame.display.update()
