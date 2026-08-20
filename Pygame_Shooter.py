@@ -384,10 +384,10 @@ while playing:
                         turret_elevation +=1
                         if turret_elevation > 3:
                             turret_elevation = 1
-                elif not settings_box_draw:
-                    if settings_box_exit.collidepoint(event.pos):
+                    elif settings_box_exit.collidepoint(event.pos):
                         settings_box_draw = False
-                    elif player_color_rect.collidepoint(event.pos):
+                elif not settings_box_draw:
+                    if player_color_rect.collidepoint(event.pos):
                         settings_box_draw = True
                         settings_box_draw_task = "p_color"
                         settings_box_select_main = True
