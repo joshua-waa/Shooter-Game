@@ -9,3 +9,5 @@ flowchart TD
     C --> F[Buy upgrades from the shop]
     F --> B
     C --> D[Have Fun!]
+```mermaid
+Used AI to convert to web
